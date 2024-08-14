@@ -40,14 +40,19 @@ type SchemaOptions struct {
 // InferSchema infers a BigQuery schema for the given proto.Message using options in
 // MarshalOptions.
 func (o SchemaOptions) InferSchema(msg proto.Message) bigquery.Schema {
-	return o.InferMessageSchema(msg.ProtoReflect().Descriptor())
+	var recursionDepth *int32
+	return o.InferMessageSchema(msg.ProtoReflect().Descriptor(), recursionDepth)
 }
 
 // InferMessageSchema infers the BigQuery schema for the given protoreflect.MessageDescriptor.
-func (o SchemaOptions) InferMessageSchema(msg protoreflect.MessageDescriptor) bigquery.Schema {
+func (o SchemaOptions) InferMessageSchema(msg protoreflect.MessageDescriptor, recursionDepth *int32) bigquery.Schema {
+	*recursionDepth++
 	schema := make(bigquery.Schema, 0, msg.Fields().Len())
 	for i := 0; i < msg.Fields().Len(); i++ {
-		fieldSchema := o.inferFieldSchema(msg.Fields().Get(i))
+		if *recursionDepth > 10 {
+			break
+		}
+		fieldSchema := o.inferFieldSchema(msg.Fields().Get(i), recursionDepth)
 		if fieldSchema != nil {
 			schema = append(schema, fieldSchema)
 		}
@@ -66,7 +71,7 @@ func (o SchemaOptions) InferMessageSchema(msg protoreflect.MessageDescriptor) bi
 	return schema
 }
 
-func (o SchemaOptions) inferFieldSchema(field protoreflect.FieldDescriptor) *bigquery.FieldSchema {
+func (o SchemaOptions) inferFieldSchema(field protoreflect.FieldDescriptor, recursionDepth *int32) *bigquery.FieldSchema {
 	if field.IsMap() {
 		return o.inferMapFieldSchema(field)
 	}
@@ -81,7 +86,7 @@ func (o SchemaOptions) inferFieldSchema(field protoreflect.FieldDescriptor) *big
 		Description: o.buildDescription(field),
 	}
 	if fieldSchema.Type == bigquery.RecordFieldType && fieldSchema.Schema == nil {
-		fieldSchema.Schema = o.InferMessageSchema(field.Message())
+		fieldSchema.Schema = o.InferMessageSchema(field.Message(), recursionDepth)
 		if len(fieldSchema.Schema) == 0 {
 			return nil
 		}
@@ -233,14 +238,16 @@ func (o SchemaOptions) inferEnumFieldType(_ protoreflect.FieldDescriptor) bigque
 }
 
 func (o SchemaOptions) inferMapFieldSchema(field protoreflect.FieldDescriptor) *bigquery.FieldSchema {
+	var recursionDepthKey int32
+	var recursionDepthValue int32
 	return &bigquery.FieldSchema{
 		Name:        string(field.Name()),
 		Repeated:    true,
 		Type:        bigquery.RecordFieldType,
 		Description: o.buildDescription(field),
 		Schema: bigquery.Schema{
-			o.inferFieldSchema(field.MapKey()),
-			o.inferFieldSchema(field.MapValue()),
+			o.inferFieldSchema(field.MapKey(), &recursionDepthKey),
+			o.inferFieldSchema(field.MapValue(), &recursionDepthValue),
 		},
 	}
 }
