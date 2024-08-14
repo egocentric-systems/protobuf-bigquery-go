@@ -40,8 +40,8 @@ type SchemaOptions struct {
 // InferSchema infers a BigQuery schema for the given proto.Message using options in
 // MarshalOptions.
 func (o SchemaOptions) InferSchema(msg proto.Message) bigquery.Schema {
-	var recursionDepth *int32
-	return o.InferMessageSchema(msg.ProtoReflect().Descriptor(), recursionDepth)
+	var recursionDepth int32
+	return o.InferMessageSchema(msg.ProtoReflect().Descriptor(), &recursionDepth)
 }
 
 // InferMessageSchema infers the BigQuery schema for the given protoreflect.MessageDescriptor.
