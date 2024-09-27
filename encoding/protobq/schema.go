@@ -49,7 +49,8 @@ func (o SchemaOptions) InferMessageSchema(msg protoreflect.MessageDescriptor, re
 	*recursionDepth++
 	schema := make(bigquery.Schema, 0, msg.Fields().Len())
 	for i := 0; i < msg.Fields().Len(); i++ {
-		if *recursionDepth > 30 {
+		//fmt.Println(*recursionDepth)
+		if *recursionDepth > 10 {
 			break
 		}
 		fieldSchema := o.inferFieldSchema(msg.Fields().Get(i), recursionDepth)
@@ -68,6 +69,7 @@ func (o SchemaOptions) InferMessageSchema(msg protoreflect.MessageDescriptor, re
 			schema = append(schema, o.inferOneofFieldSchema(oneof))
 		}
 	}
+	*recursionDepth--
 	return schema
 }
 
