@@ -91,13 +91,14 @@ func (o SchemaOptions) inferFieldSchema(field protoreflect.FieldDescriptor, recu
 		fieldSchema.Schema = o.InferMessageSchema(field.Message(), recursionDepth)
 
 		/* (rico) actually our APIs do contain empty proto messages;
-		instead of ignoring them we would like to store them within
-		BQ as an empty record.
-
+		Nevertheless BQ fails with 'xxx is type RECORD but has no schema'
+		when trying to map some empty record.
+		Therefore, we store empty messages as field of type 'BOOLEAN'.
+		*/
 		if len(fieldSchema.Schema) == 0 {
+			fieldSchema.Type = bigquery.BooleanFieldType
 			return nil
 		}
-		*/
 	}
 	if o.UseModeFromFieldBehavior {
 		fieldSchema.Required = fieldbehavior.Has(field, annotations.FieldBehavior_REQUIRED)
