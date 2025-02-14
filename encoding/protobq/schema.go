@@ -97,7 +97,7 @@ func (o SchemaOptions) inferFieldSchema(field protoreflect.FieldDescriptor, recu
 		*/
 		if len(fieldSchema.Schema) == 0 {
 			fieldSchema.Type = bigquery.BooleanFieldType
-			return nil
+			return fieldSchema
 		}
 	}
 	if o.UseModeFromFieldBehavior {
