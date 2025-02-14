@@ -66,10 +66,15 @@ func (o MarshalOptions) marshalMessage(msg protoreflect.Message) (map[string]big
 				returnErr = errMarshal
 				return false
 			}
+			/* (rico) actually our APIs do contain empty proto messages;
+			instead of ignoring them we would like to store them within
+			BQ as an empty record.
+
 			if m, ok := column.(map[string]bigquery.Value); ok && len(m) == 0 {
 				// don't set anything for empty records
 				return true
 			}
+			*/
 			result[string(field.Name())] = column
 		}
 		return true
