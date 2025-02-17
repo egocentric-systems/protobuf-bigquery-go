@@ -68,12 +68,7 @@ func (o MarshalOptions) marshalMessage(msg protoreflect.Message) (map[string]big
 			}
 
 			if m, ok := column.(map[string]bigquery.Value); ok && len(m) == 0 {
-				/* (rico) actually our APIs do contain empty proto messages;
-				Nevertheless BQ fails with 'xxx is type RECORD but has no schema'
-				when trying to map some empty record.
-				Therefore, we store empty messages as field of type 'BOOLEAN'.
-				*/
-				result[string(field.Name())] = protoreflect.ValueOfBool(true)
+				// don't set anything for empty records
 				return true
 			}
 			result[string(field.Name())] = column
